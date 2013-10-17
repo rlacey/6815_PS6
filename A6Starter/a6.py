@@ -50,16 +50,15 @@ def interpolateLin(im, y, x, repeatEdge=0):
 
 def applyHomography(source, out, H, bilinear=False):
     '''takes the image source, warps it by the homography H, and adds it to the composite out. If bilinear=True use bilinear interpolation, otherwise use NN. Keep in mind that we are iterating through the output image, and the transformation from output pixels to source pixels is the inverse of the one from source pixels to the output. Does not return anything.'''
-    for y,x in imIter(out):
-        (yp, xp, wp) = linalg.inv(H) * np.array([y,x,1])
-        (ypp, xpp) = (yp/wp[2], xp/wp[2])
-##        print ypp, xpp, int(ypp[2]), xpp[2]
-        (ySafe, xSafe) = getSafePix(source, int(ypp[2]), int(xpp[2]))
+    print np.shape(out)
+    for y,x in imIter(out):        
+        (yp, xp, wp) = np.dot(linalg.inv(H), np.array([y,x,1]))
+        (ypp, xpp) = (yp/wp, xp/wp)
+        (ySafe, xSafe) = getSafePix(source, int(ypp), int(xpp))
         if bilinear:
             out[y,x] = interpolateLin(source, ySafe, xSafe)
         else:
-##            print ypp[2], xpp[2]
-##            print ySafe, xSafe
+##            print y, x, ypp, xpp, ySafe, xSafe
             out[y,x] = source[ySafe,xSafe]
     return out
 

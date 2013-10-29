@@ -2,14 +2,15 @@
 #Starter code by Abe Davis
 #
 #
-# Student Name:
-# MIT Email:
+# Student Name: Ryan Lacey
+# MIT Email: rlacey@mit.edu
 
 import a6
 import numpy as np
 import glob
 import imageIO as io
 from scipy import linalg
+import time
 
 def getPNGsInDir(path):
     fnames = glob.glob(path+"*.png")
@@ -98,6 +99,29 @@ def testStitchScience():
     io.imwrite(out, "science_stitch.png")
 
 
+
+
+def testComputeAndApplyHomographyFun():
+    im1=io.imread('fun/room1.png')
+    im2=io.imread('fun/room2.png')
+    pointList1=[np.array([327, 258, 1], dtype=np.float64), np.array([75, 437, 1], dtype=np.float64), np.array([224, 364, 1], dtype=np.float64), np.array([423, 449, 1], dtype=np.float64)]
+    pointList2=[np.array([294, 50, 1], dtype=np.float64), np.array([50, 227, 1], dtype=np.float64), np.array([190, 161, 1], dtype=np.float64), np.array([366, 240, 1], dtype=np.float64)]
+    listOfPairsS=zip(pointList1, pointList2)
+    HS=a6.computeHomography(listOfPairsS)
+    #multiply by 0.2 to better show the transition
+    out=im2*0.5    
+    a6.applyHomography(im1, out, HS, True)
+    io.imwrite(out, "fun.png")
+
+def testStitchFun():
+    im1=io.imread('fun/room1.png')
+    im2=io.imread('fun/room2.png')
+    pointList1=[np.array([327, 258, 1], dtype=np.float64), np.array([75, 437, 1], dtype=np.float64), np.array([224, 364, 1], dtype=np.float64), np.array([423, 449, 1], dtype=np.float64)]
+    pointList2=[np.array([294, 50, 1], dtype=np.float64), np.array([50, 227, 1], dtype=np.float64), np.array([190, 161, 1], dtype=np.float64), np.array([366, 240, 1], dtype=np.float64)]
+    listOfPairs=zip(pointList1, pointList2)
+    out = a6.stitch(im1, im2, listOfPairs)
+    io.imwrite(out, "MyPano.png")
+
 def testCompositeStata():
     im1=io.imread('stata/stata-1.png')
     im2=io.imread('stata/stata-2.png')
@@ -107,24 +131,26 @@ def testCompositeStata():
     out = a6.stitchN([im1, im2], [listOfPairs], 0)
     io.imwrite(out, "stata_stitchN.png")
 
-def testNPano():
-    im1 = io.imread('vancouverPan/vancouver1.png')
-    im2 = io.imread('vancouverPan/vancouver2.png')
-    im3 = io.imread('vancouverPan/vancouver3.png')
+def testCompositeVancouver():
+    im1 = io.imread('vancouverPan/vancouver0.png')
+    im2 = io.imread('vancouverPan/vancouver1.png')
+    im3 = io.imread('vancouverPan/vancouver2.png')
 
-    pointList1=[np.array([316, 21, 1], dtype=np.float64), np.array([288, 173, 1], dtype=np.float64), np.array([178, 203, 1], dtype=np.float64), np.array([156, 82, 1], dtype=np.float64)]
-    pointList2=[np.array([313, 147, 1], dtype=np.float64), np.array([291, 293, 1], dtype=np.float64), np.array([172, 324, 1], dtype=np.float64), np.array([161, 198, 1], dtype=np.float64)]
+    pointList1=[np.array([138, 70, 1], dtype=np.float64), np.array([113, 151, 1], dtype=np.float64), np.array([279, 127, 1], dtype=np.float64), np.array([292, 84, 1], dtype=np.float64)]
+    pointList2=[np.array([127, 220, 1], dtype=np.float64), np.array([90, 305, 1], dtype=np.float64), np.array([269, 278, 1], dtype=np.float64), np.array([279, 234, 1], dtype=np.float64)]
     listOfPairs1=zip(pointList1, pointList2)
-    pointList3=[np.array([300, 27, 1], dtype=np.float64), np.array([175, 145, 1], dtype=np.float64), np.array([160, 198, 1], dtype=np.float64), np.array([311, 171, 1], dtype=np.float64)]
-    pointList4=[np.array([283, 134, 1], dtype=np.float64), np.array([165, 254, 1], dtype=np.float64), np.array([149, 311, 1], dtype=np.float64), np.array([306, 273, 1], dtype=np.float64)]
+    pointList3=[np.array([292, 97, 1], dtype=np.float64), np.array([316, 86, 1], dtype=np.float64), np.array([172, 140, 1], dtype=np.float64), np.array([164, 24, 1], dtype=np.float64)]
+    pointList4=[np.array([293, 215, 1], dtype=np.float64), np.array([316, 205, 1], dtype=np.float64), np.array([171, 256, 1], dtype=np.float64), np.array([172, 145, 1], dtype=np.float64)]
     listOfPairs2=zip(pointList3, pointList4)
 
     listOfListOfPairs = [listOfPairs1, listOfPairs2]
     listOfImages = [im1, im2, im3]
     refIndex = 1
+    start = time.time()
     out = a6.stitchN(listOfImages, listOfListOfPairs, refIndex)
-    io.imwrite(out, "vancouver_stitchN.png")    
-
+    end = time.time()
+    print end - start
+    io.imwrite(out, "MyPanoMany.png")
 
 
 ##testApplyHomographyPoster()
@@ -133,8 +159,10 @@ def testNPano():
 ##testComputeAndApplyHomographyStata()
 ##testStitchStata()
 ##testStitchScience()
-##testCompositeStata()
 
-testNPano()
+testComputeAndApplyHomographyFun()    
+testStitchFun()    
+##testCompositeStata()
+testCompositeVancouver()
 #***You can test on the first N images of a list by feeding im[:N] as the argument instead of im***
 

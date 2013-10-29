@@ -18,8 +18,14 @@ def imIter(im):
 def within_bounds(im, y, x):
     return y>0 and y<im.shape[0] and x>0 and x<im.shape[1]
 
-def getBlackPadded(im, y, x):
-    return im[y, x] if within_bounds(im, y, x) else np.array([0, 0, 0])
+def clipX(im, x):
+   return min(np.shape(im)[1]-1, max(x, 0))
+
+def clipY(im, y):
+   return min(np.shape(im)[0]-1, max(y, 0))
+              
+def getSafePix(im, y, x):
+ return im[clipY(im, y), clipX(im, x)]
 
 def interpolateLin(im, y, x, repeatEdge=0):
     # R and P notation from http://en.wikipedia.org/wiki/Bilinear_interpolation
@@ -30,11 +36,11 @@ def interpolateLin(im, y, x, repeatEdge=0):
     topY = int(math.ceil(y))
     # Interpolate x's
     if leftX == rightX:
-        R2 = getBlackPadded(im, topY, x)
-        R1 = getBlackPadded(im, bottomY, x)
+        R2 = getSafePix(im, topY, x)
+        R1 = getSafePix(im, bottomY, x)
     else:
-        R2 = getBlackPadded(im, topY, rightX) * (x - leftX) + getBlackPadded(im, topY, leftX) * (rightX - x)
-        R1 = getBlackPadded(im, bottomY, rightX) * (x - leftX) + getBlackPadded(im, bottomY, leftX) * (rightX - x)
+        R2 = getSafePix(im, topY, rightX) * (x - leftX) + getSafePix(im, topY, leftX) * (rightX - x)
+        R1 = getSafePix(im, bottomY, rightX) * (x - leftX) + getSafePix(im, bottomY, leftX) * (rightX - x)
     # interpolate midpoints (R1 and R2)
     if bottomY == topY:
         P = R2
@@ -139,9 +145,18 @@ def stitch(im1, im2, listOfPairs):
 #######6.865 Only###############
 
 def applyHomographyFast(source, out, H, bilinear=False):
-    # takes the image source, warps it by the homography H, and adds it to the composite out.
-    # This version should only iterate over the pixels inside the bounding box of source's image in out.
-    pass
+    '''Takes the image source, warps it by the homography H, and adds it to the composite out.
+    This version should only iterate over the pixels inside the bounding box of source's image in out. '''
+    bbox = computeTransformedBBox(np.shape(source), H)
+    for y in xrange(bbox[0][0], bbox[1][0]):
+        for x in xrange(bbox[0][1], bbox[1][1]):
+            (yp, xp, wp) = np.dot(linalg.inv(H), np.array([y,x,1]))
+            (ypp, xpp) = (yp/wp, xp/wp)
+            if within_bounds(source, ypp, xpp):        
+                if bilinear:
+                    out[y,x] = interpolateLin(source, ypp, xpp)
+                else:
+                    out[y,x] = source[ypp,xpp]
 
 
 def computeNHomographies(listOfListOfPairs, refIndex):
@@ -176,7 +191,7 @@ def compositeNImages(listOfImages, listOfH):
     out = np.zeros([height, width, 3])    
     translation = translate(bbox)
     for i in xrange(len(listOfImages)):
-        applyHomography(listOfImages[i], out, np.dot(translation, listOfH[i]), True)
+        applyHomographyFast(listOfImages[i], out, np.dot(translation, listOfH[i]), True)
     return out
 
 def stitchN(listOfImages, listOfListOfPairs, refIndex):
